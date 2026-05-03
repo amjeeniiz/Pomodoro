@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1610" id="theme-color-meta" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="โฟกัส" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>โฟกัส Timer</title>
+
+  <!-- PWA Manifest inline -->
+  <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E0%B9%82%E0%B8%9F%E0%B8%81%E0%B8%B1%E0%B8%AA%20Timer%22%2C%22short_name%22%3A%22%E0%B9%82%E0%B8%9F%E0%B8%81%E0%B8%B1%E0%B8%AA%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1610%22%2C%22theme_color%22%3A%22%231a1610%22%7D" />
+
+  <!-- Apple touch icon (generated via canvas at runtime) -->
+  <link rel="apple-touch-icon" id="apple-icon" href="" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    body {
+      font-family: 'DM Serif Display', 'Noto Serif Thai', Georgia, serif;
+      background: #1a1610;
+      color: #f0ece4;
+      user-select: none;
+      transition: background 1.2s ease;
+    }
+    #app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px 90px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(90px, calc(env(safe-area-inset-bottom) + 70px));
+    }
+
+    /* Animations */
+    @keyframes fadeIn   { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes breathe  { 0%,100% { transform:scale(1); } 50% { transform:scale(1.013); } }
+    @keyframes slideDown{ from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Mode label */
+    #mode-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      font-weight: 500;
+      opacity: 0.65;
+      transition: color 1.2s ease;
+    }
+    #top-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    /* Gear button */
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 0.2s, transform 0.2s;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .icon-btn:hover { opacity: 0.85; transform: scale(1.1); }
+    .icon-btn:active { transform: scale(0.95); }
+
+    /* Settings panel */
+    #settings-panel {
+      background: #2a2218;
+      border: 1px solid rgba(200,168,130,0.12);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 340px;
+      animation: slideDown 0.25s ease;
+      display: none;
+    }
+    #settings-panel.visible { display: block; }
+    .setting-section { margin-bottom: 16px; }
+    .setting-section:last-of-type { margin-bottom: 0; }
+    .setting-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+    }
+    .chip:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .chip.active { font-weight: 600; }
+    #save-btn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 9px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: filter 0.2s;
+    }
+    #save-btn:hover { filter: brightness(1.1); }
+
+    /* Cycle dots */
+    #cycle-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 28px;
+      height: 6px;
+      align-items: center;
+    }
+    .dot {
+      height: 6px;
+      border-radius: 3px;
+      transition: all 0.5s ease;
+    }
+
+    /* Ring */
+    #ring-wrap {
+      position: relative;
+      transition: none;
+    }
+    #ring-wrap.breathing { animation: breathe 4s ease-in-out infinite; }
+    #ring-svg { transform: rotate(-90deg); display: block; }
+    .ring-arc { transition: stroke 1.2s ease, stroke-dashoffset 0.85s ease; }
+
+    /* Timer text */
+    #timer-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    #timer-display {
+      font-family: 'DM Serif Display', serif;
+      font-size: 64px;
+      font-weight: 400;
+      letter-spacing: -3px;
+      line-height: 1;
+      transition: color 1.2s ease;
+    }
+    #timer-sub {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: color 1.2s ease;
+    }
+
+    /* Controls */
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-top: 40px;
+    }
+    #play-btn {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    #play-btn:hover { filter: brightness(1.15); transform: scale(1.05); }
+    #play-btn:active { transform: scale(0.96); }
+
+    /* Mode pills */
+    #mode-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 36px;
+      border-radius: 999px;
+      padding: 5px 6px;
+      transition: background 1.2s ease;
+    }
+    .pill {
+      padding: 7px 18px;
+      border-radius: 999px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.3s ease;
+    }
+
+    /* Session log */
+    #session-log {
+      margin-top: 36px;
+      width: 100%;
+      max-width: 300px;
+      animation: fadeIn 0.5s ease;
+      display: none;
+    }
+    #session-log.visible { display: block; }
+    #session-log-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    #session-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .session-tag {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    /* Footer */
+    #footer {
+      position: fixed;
+      bottom: max(22px, env(safe-area-inset-bottom));
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      transition: color 1.2s ease;
+      text-align: center;
+    }
+
+    /* Install banner */
+    #install-banner {
+      position: fixed;
+      bottom: max(70px, calc(env(safe-area-inset-bottom) + 50px));
+      left: 16px; right: 16px;
+      background: rgba(40,35,28,0.96);
+      border: 1px solid rgba(200,168,130,0.2);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: #c8a882;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      animation: fadeIn 0.4s ease 1.5s both;
+    }
+    #install-banner button {
+      background: #c8a882;
+      color: #1a1610;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #install-banner .close-x {
+      background: none;
+      color: rgba(200,168,130,0.4);
+      font-size: 18px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Top row -->
+  <div id="top-row">
+    <div id="mode-label">โฟกัส</div>
+    <button class="icon-btn" id="gear-btn" title="ตั้งเวลา">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a882" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings-panel">
+    <div class="setting-section">
+      <div class="setting-label" style="color:rgba(200,168,130,0.56)">🔥 เวลาโฟกัส (นาที)</div>
+      <div class="chips" id="work-chips"></div>
+    </div>
+    <div class="setting-section">
+      <div class="setting-label" style="color:rgba(130,184,200,0.56)">🌿 เวลาพัก (นาที)</div>
+      <div class="chips" id="break-chips"></div>
+    </div>
+    <button id="save-btn">✓ บันทึก</button>
+  </div>
+
+  <!-- Cycle dots -->
+  <div id="cycle-dots"></div>
+
+  <!-- Ring -->
+  <div id="ring-wrap">
+    <svg id="ring-svg" width="300" height="300" viewBox="0 0 300 300">
+      <circle id="ring-track" cx="150" cy="150" r="128" fill="none" stroke-width="3.5"/>
+      <circle id="ring-progress" cx="150" cy="150" r="128" fill="none" stroke-width="3.5"
+        stroke-linecap="round" class="ring-arc"/>
+      <circle id="ring-glow" cx="150" cy="150" r="128" fill="none" stroke-width="10"
+        stroke-linecap="round" class="ring-arc" opacity="0.4"/>
+    </svg>
+    <div id="timer-center">
+      <div id="timer-display">30:00</div>
+      <div id="timer-sub">รอบที่ 1 · 30 นาที</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button class="icon-btn" id="reset-btn" title="รีเซ็ต">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c8a882" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </button>
+    <button id="play-btn">
+      <svg id="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="#1a1610" style="margin-left:4px">
+        <polygon points="5,3 20,12 5,21"/>
+      </svg>
+      <svg id="pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="#1a1610" style="display:none">
+        <rect x="5" y="4" width="4.5" height="16" rx="1.5"/>
+        <rect x="14.5" y="4" width="4.5" height="16" rx="1.5"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="skip-btn" title="ข้ามรอบ">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c8a882" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5,4 15,12 5,20"/>
+        <line x1="19" y1="4" x2="19" y2="20"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mode pills -->
+  <div id="mode-pills">
+    <button class="pill" id="pill-work">🔥 โฟกัส 30 นาที</button>
+    <button class="pill" id="pill-break">🌿 พัก 5 นาที</button>
+  </div>
+
+  <!-- Session log -->
+  <div id="session-log">
+    <div id="session-log-title">ประวัติวันนี้</div>
+    <div id="session-tags"></div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div id="footer">กด ▶ เพื่อเริ่ม</div>
+
+<!-- Install banner (shown on Android/Desktop) -->
+<div id="install-banner" style="display:none">
+  <span>📲 เพิ่มลง Home Screen</span>
+  <button id="install-btn">ติดตั้ง</button>
+  <button class="close-x icon-btn" id="close-banner">✕</button>
+</div>
+
+<script>
+const TIME_OPTIONS = [5,10,15,20,25,30,35,40,45,50,55,60];
+const CIRCUMFERENCE = 2 * Math.PI * 128;
+
+const COLORS = {
+  work:  { color: "#c8a882", bg: "#1a1610", soft: "#2a2218", trackOpacity: "16" },
+  break: { color: "#82b8c8", bg: "#101618", soft: "#182022", trackOpacity: "16" },
+};
+
+// State
+let mode = "work";
+let workMins = 30;
+let breakMins = 5;
+let timeLeft = workMins * 60;
+let running = false;
+let cycles = 0;
+let completedSessions = [];
+let timerInterval = null;
+let showSettings = false;
+
+// Elements
+const $ = id => document.getElementById(id);
+const body = document.body;
+const app = $("app");
+
+function cfg() { return COLORS[mode]; }
+function duration() { return (mode === "work" ? workMins : breakMins) * 60; }
+function pad(n) { return String(n).padStart(2,"0"); }
+function fmt(s) { return `${pad(Math.floor(s/60))}:${pad(s%60)}`; }
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+function applyTheme() {
+  const c = cfg();
+  body.style.background = c.bg;
+  document.querySelector("#theme-color-meta").content = c.bg;
+
+  $("mode-label").style.color = c.color;
+  $("gear-btn").querySelector("svg").setAttribute("stroke", c.color);
+  $("settings-panel").style.background = c.soft;
+  $("settings-panel").style.borderColor = c.color + "20";
+  $("save-btn").style.background = c.color;
+  $("save-btn").style.color = c.bg;
+
+  $("ring-track").setAttribute("stroke", c.color + "16");
+  $("ring-progress").setAttribute("stroke", c.color);
+  $("ring-glow").setAttribute("stroke", c.color);
+  $("timer-display").style.color = c.color;
+  $("timer-sub").style.color = c.color + "55";
+  $("play-btn").style.background = c.color;
+  $("play-btn").style.boxShadow = `0 0 40px ${c.color}50, 0 0 80px ${c.color}20`;
+  $("play-btn").querySelectorAll("svg").forEach(s => s.setAttribute("fill", c.bg));
+  $("reset-btn").querySelector("svg").setAttribute("stroke", c.color);
+  $("skip-btn").querySelector("svg").setAttribute("stroke", c.color);
+  $("mode-pills").style.background = c.color + "10";
+  $("session-log-title").style.color = c.color + "45";
+  $("footer").style.color = c.color + "28";
+}
+
+function renderRing() {
+  const progress = timeLeft / duration();
+  const offset = CIRCUMFERENCE * progress;
+  const circumStr = CIRCUMFERENCE.toFixed(2);
+  $("ring-progress").setAttribute("stroke-dasharray", circumStr);
+  $("ring-progress").setAttribute("stroke-dashoffset", (CIRCUMFERENCE - offset).toFixed(2));
+  $("ring-glow").setAttribute("stroke-dasharray", `0 ${circumStr}`);
+  $("ring-glow").setAttribute("stroke-dashoffset", (-(CIRCUMFERENCE - offset) + 1).toFixed(2));
+}
+
+function renderTimer() {
+  $("timer-display").textContent = fmt(timeLeft);
+  $("timer-sub").textContent = mode === "work"
+    ? `รอบที่ ${cycles + 1} · ${workMins} นาที`
+    : `พัก · ${breakMins} นาที`;
+}
+
+function renderDots() {
+  const el = $("cycle-dots");
+  el.innerHTML = "";
+  const count = Math.max(cycles + 1, 4);
+  const c = cfg();
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement("div");
+    d.className = "dot";
+    d.style.width = i < cycles ? "20px" : "6px";
+    d.style.background = i < cycles ? c.color : c.color + "28";
+    el.appendChild(d);
+  }
+}
+
+function renderPills() {
+  const c = cfg();
+  const pw = $("pill-work"), pb = $("pill-break");
+  pw.textContent = `🔥 โฟกัส ${workMins} นาที`;
+  pb.textContent = `🌿 พัก ${breakMins} นาที`;
+  if (mode === "work") {
+    pw.style.background = c.color; pw.style.color = c.bg;
+    pb.style.background = "transparent"; pb.style.color = c.color + "65";
+  } else {
+    pb.style.background = c.color; pb.style.color = c.bg;
+    pw.style.background = "transparent"; pw.style.color = c.color + "65";
+  }
+}
+
+function renderSessions() {
+  const log = $("session-log");
+  if (completedSessions.length === 0) { log.classList.remove("visible"); return; }
+  log.classList.add("visible");
+  const tags = $("session-tags");
+  tags.innerHTML = "";
+  completedSessions.slice(-12).forEach(s => {
+    const d = document.createElement("div");
+    d.className = "session-tag";
+    d.style.background = s.type === "work" ? "rgba(200,168,130,0.13)" : "rgba(130,184,200,0.11)";
+    d.style.color = s.type === "work" ? COLORS.work.color : COLORS.break.color;
+    d.textContent = s.type === "work" ? "🔥 โฟกัส" : "🌿 พัก";
+    tags.appendChild(d);
+  });
+}
+
+function renderPlayPause() {
+  $("play-icon").style.display = running ? "none" : "block";
+  $("pause-icon").style.display = running ? "block" : "none";
+  const rw = $("ring-wrap");
+  if (running) rw.classList.add("breathing"); else rw.classList.remove("breathing");
+}
+
+function renderFooter() {
+  $("footer").textContent = running ? "กำลังทำงาน ✦ สู้ๆ"
+    : showSettings ? "เลือกเวลาแล้วกด บันทึก"
+    : "กด ▶ เพื่อเริ่ม";
+}
+
+function renderChips() {
+  const wc = $("work-chips"), bc = $("break-chips");
+  wc.innerHTML = ""; bc.innerHTML = "";
+  TIME_OPTIONS.forEach(m => {
+    // work chip
+    const wb = document.createElement("button");
+    wb.className = "chip" + (workMins === m ? " active" : "");
+    wb.textContent = m;
+    wb.style.background = workMins === m ? COLORS.work.color : COLORS.work.color + "18";
+    wb.style.color = workMins === m ? COLORS.work.bg : COLORS.work.color + "cc";
+    wb.onclick = () => { workMins = m; if (mode === "work" && !running) { timeLeft = m * 60; renderTimer(); renderRing(); } renderChips(); };
+    wc.appendChild(wb);
+    // break chip
+    const bb = document.createElement("button");
+    bb.className = "chip" + (breakMins === m ? " active" : "");
+    bb.textContent = m;
+    bb.style.background = breakMins === m ? COLORS.break.color : COLORS.break.color + "18";
+    bb.style.color = breakMins === m ? COLORS.break.bg : COLORS.break.color + "cc";
+    bb.onclick = () => { breakMins = m; if (mode === "break" && !running) { timeLeft = m * 60; renderTimer(); renderRing(); } renderChips(); };
+    bc.appendChild(bb);
+  });
+}
+
+function render() {
+  applyTheme();
+  renderRing();
+  renderTimer();
+  renderDots();
+  renderPills();
+  renderSessions();
+  renderPlayPause();
+  renderFooter();
+}
+
+// ── LOGIC ────────────────────────────────────────────────────────────────────
+function beep(isWork) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 160, 320].forEach(delay => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = isWork ? 528 : 432;
+      o.type = "sine";
+      g.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.65);
+      o.start(ctx.currentTime + delay/1000);
+      o.stop(ctx.currentTime + delay/1000 + 0.7);
+    });
+  } catch(e) {}
+}
+
+function switchMode(newMode, auto = false) {
+  mode = newMode;
+  timeLeft = (newMode === "work" ? workMins : breakMins) * 60;
+  running = false;
+  clearInterval(timerInterval);
+  render();
+  if (auto) setTimeout(() => { running = true; startTimer(); render(); }, 800);
+}
+
+function tick() {
+  timeLeft--;
+  if (timeLeft <= 0) {
+    const wasWork = mode === "work";
+    const nextMode = wasWork ? "break" : "work";
+    if (wasWork) { cycles++; completedSessions.push({ type: "work" }); }
+    else { completedSessions.push({ type: "break" }); }
+    beep(wasWork);
+    clearInterval(timerInterval);
+    running = false;
+    // show notification
+    if (Notification.permission === "granted") {
+      new Notification(wasWork ? "🌿 หยุดพักได้แล้ว!" : "🔥 ได้เวลาโฟกัสอีกครั้ง!", {
+        body: wasWork ? `พักสักครู่ ${breakMins} นาที` : `โฟกัส ${workMins} นาที`,
+        icon: "",
+        silent: false,
+      });
+    }
+    switchMode(nextMode, true);
+    return;
+  }
+  renderRing();
+  renderTimer();
+  // update tab title
+  document.title = `${fmt(timeLeft)} – ${mode === "work" ? "โฟกัส" : "พัก"}`;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+}
+
+function toggle() {
+  running = !running;
+  if (running) {
+    startTimer();
+    // request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  } else {
+    clearInterval(timerInterval);
+  }
+  renderPlayPause();
+  renderFooter();
+}
+
+function reset() {
+  running = false;
+  clearInterval(timerInterval);
+  timeLeft = duration();
+  render();
+}
+
+function skipToNext() {
+  clearInterval(timerInterval);
+  running = false;
+  switchMode(mode === "work" ? "break" : "work");
+}
+
+// ── EVENT LISTENERS ──────────────────────────────────────────────────────────
+$("play-btn").onclick = toggle;
+$("reset-btn").onclick = reset;
+$("skip-btn").onclick = skipToNext;
+$("pill-work").onclick = () => switchMode("work");
+$("pill-break").onclick = () => switchMode("break");
+
+$("gear-btn").onclick = () => {
+  showSettings = !showSettings;
+  running = false; clearInterval(timerInterval);
+  $("settings-panel").classList.toggle("visible", showSettings);
+  renderChips();
+  renderPlayPause();
+  renderFooter();
+};
+$("save-btn").onclick = () => {
+  showSettings = false;
+  $("settings-panel").classList.remove("visible");
+  renderPills();
+  renderFooter();
+};
+
+// ── PWA INSTALL ──────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $("install-banner").style.display = "flex";
+});
+$("install-btn").onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $("install-banner").style.display = "none";
+};
+$("close-banner").onclick = () => { $("install-banner").style.display = "none"; };
+window.addEventListener("appinstalled", () => { $("install-banner").style.display = "none"; });
+
+// ── SERVICE WORKER ────────────────────────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  const swCode = `
+    const CACHE = "pomodoro-v1";
+    self.addEventListener("install", e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(["."])));
+      self.skipWaiting();
+    });
+    self.addEventListener("fetch", e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], { type: "application/javascript" });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
