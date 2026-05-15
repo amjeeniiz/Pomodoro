@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -11,9 +12,11 @@
   <title>โฟกัส Timer</title>
 
   <!-- PWA Manifest inline -->
+
   <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E0%B9%82%E0%B8%9F%E0%B8%81%E0%B8%B1%E0%B8%AA%20Timer%22%2C%22short_name%22%3A%22%E0%B9%82%E0%B8%9F%E0%B8%81%E0%B8%B1%E0%B8%AA%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1610%22%2C%22theme_color%22%3A%22%231a1610%22%7D" />
 
   <!-- Apple touch icon (generated via canvas at runtime) -->
+
   <link rel="apple-touch-icon" id="apple-icon" href="" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -299,11 +302,13 @@
       padding: 0 4px;
     }
   </style>
+
 </head>
 <body>
 <div id="app">
 
   <!-- Top row -->
+
   <div id="top-row">
     <div id="mode-label">โฟกัส</div>
     <button class="icon-btn" id="gear-btn" title="ตั้งเวลา">
@@ -315,6 +320,7 @@
   </div>
 
   <!-- Settings panel -->
+
   <div id="settings-panel">
     <div class="setting-section">
       <div class="setting-label" style="color:rgba(200,168,130,0.56)">🔥 เวลาโฟกัส (นาที)</div>
@@ -328,9 +334,11 @@
   </div>
 
   <!-- Cycle dots -->
+
   <div id="cycle-dots"></div>
 
   <!-- Ring -->
+
   <div id="ring-wrap">
     <svg id="ring-svg" width="300" height="300" viewBox="0 0 300 300">
       <circle id="ring-track" cx="150" cy="150" r="128" fill="none" stroke-width="3.5"/>
@@ -346,6 +354,7 @@
   </div>
 
   <!-- Controls -->
+
   <div id="controls">
     <button class="icon-btn" id="reset-btn" title="รีเซ็ต">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c8a882" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -371,12 +380,14 @@
   </div>
 
   <!-- Mode pills -->
+
   <div id="mode-pills">
     <button class="pill" id="pill-work">🔥 โฟกัส 30 นาที</button>
     <button class="pill" id="pill-break">🌿 พัก 5 นาที</button>
   </div>
 
   <!-- Session log -->
+
   <div id="session-log">
     <div id="session-log-title">ประวัติวันนี้</div>
     <div id="session-tags"></div>
@@ -385,9 +396,11 @@
 </div>
 
 <!-- Footer -->
+
 <div id="footer">กด ▶ เพื่อเริ่ม</div>
 
 <!-- Install banner (shown on Android/Desktop) -->
+
 <div id="install-banner" style="display:none">
   <span>📲 เพิ่มลง Home Screen</span>
   <button id="install-btn">ติดตั้ง</button>
@@ -594,8 +607,6 @@ function tick() {
     if (wasWork) { cycles++; completedSessions.push({ type: "work" }); }
     else { completedSessions.push({ type: "break" }); }
     beep(wasWork);
-    clearInterval(timerInterval);
-    running = false;
     // show notification
     if (Notification.permission === "granted") {
       new Notification(wasWork ? "🌿 หยุดพักได้แล้ว!" : "🔥 ได้เวลาโฟกัสอีกครั้ง!", {
@@ -604,7 +615,10 @@ function tick() {
         silent: false,
       });
     }
-    switchMode(nextMode, true);
+    // Auto-switch and continue immediately
+    mode = nextMode;
+    timeLeft = (nextMode === "work" ? workMins : breakMins) * 60;
+    render();
     return;
   }
   renderRing();
@@ -705,5 +719,6 @@ if ("serviceWorker" in navigator) {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 render();
 </script>
+
 </body>
 </html>
