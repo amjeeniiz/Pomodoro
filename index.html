@@ -7,7 +7,6 @@
   <meta name="theme-color" content="#18181C" />
   <title>โปโมโดโร 🍅</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="manifest" href="manifest.json" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #18181C; font-family: 'Sarabun', sans-serif; }
@@ -90,7 +89,7 @@ function tick() {
 if (!running || !phaseEndTime) return;
 const now = Date.now();
 
-
+```
 // ยังไม่หมดเวลา — แค่ re-render
 if (now < phaseEndTime) { render(); return; }
 
@@ -114,7 +113,7 @@ while (overflow >= 0) {
 }
 
 render();
-
+```
 
 }
 
@@ -140,6 +139,7 @@ const app = document.getElementById(“app”);
 const isWork = phase === “work”;
 const cls = isWork ? “work” : “brk”;
 
+```
 if (!running) {
   // Setup screen
   app.innerHTML = `
