@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +6,6 @@
   <meta name="theme-color" content="#18181C" />
   <title>โปโมโดโร 🍅</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="manifest" href="manifest.json" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #18181C; font-family: 'Sarabun', sans-serif; }
@@ -56,183 +54,176 @@
   const BREAK_OPTIONS = [5, 10, 15, 20, 30, 60];
   const pad = n => String(n).padStart(2, "0");
 
-// –– config (ผู้ใช้เลือก) ––
-let workMin = 25;
-let breakMin = 5;
+  // ---- config (ผู้ใช้เลือก) ----
+  let workMin = 25;
+  let breakMin = 5;
 
-// –– timer state ––
-let running = false;
-let phase = “work”;        // “work” | “break”
-let round = 1;
-let phaseEndTime = null;   // Date.now() + ms ที่รอบนี้จะสิ้นสุด
-let tickId = null;
+  // ---- timer state ----
+  let running = false;
+  let phase = "work";        // "work" | "break"
+  let round = 1;
+  let phaseEndTime = null;   // Date.now() + ms ที่รอบนี้จะสิ้นสุด
+  let tickId = null;
 
-// –– core logic ––
-function startTimer() {
-if (running) return;
-running = true;
-phase = “work”;
-round = 1;
-phaseEndTime = Date.now() + workMin * 60 * 1000;
-tickId = setInterval(tick, 500);
-render();
-}
-
-function stopTimer() {
-running = false;
-clearInterval(tickId);
-tickId = null;
-phaseEndTime = null;
-render();
-}
-
-function tick() {
-if (!running || !phaseEndTime) return;
-const now = Date.now();
-
-
-// ยังไม่หมดเวลา — แค่ re-render
-if (now < phaseEndTime) { render(); return; }
-
-// หมดเวลาแล้ว — คำนวณข้ามรอบถ้าดับจอนาน
-let overflow = now - phaseEndTime; // ms ที่เกินมา
-
-while (overflow >= 0) {
-  // สลับ phase
-  if (phase === "work") {
-    phase = "break";
-    const dur = breakMin * 60 * 1000;
-    if (overflow < dur) { phaseEndTime = Date.now() + (dur - overflow); break; }
-    overflow -= dur;
-  } else {
+  // ---- core logic ----
+  function startTimer() {
+    if (running) return;
+    running = true;
     phase = "work";
-    round += 1;
-    const dur = workMin * 60 * 1000;
-    if (overflow < dur) { phaseEndTime = Date.now() + (dur - overflow); break; }
-    overflow -= dur;
+    round = 1;
+    phaseEndTime = Date.now() + workMin * 60 * 1000;
+    tickId = setInterval(tick, 500);
+    render();
   }
-}
 
-render();
+  function stopTimer() {
+    running = false;
+    clearInterval(tickId);
+    tickId = null;
+    phaseEndTime = null;
+    render();
+  }
 
+  function tick() {
+    if (!running || !phaseEndTime) return;
+    const now = Date.now();
 
-}
+    // ยังไม่หมดเวลา — แค่ re-render
+    if (now < phaseEndTime) { render(); return; }
 
-function secondsLeft() {
-if (!phaseEndTime) return 0;
-return Math.max(0, Math.round((phaseEndTime - Date.now()) / 1000));
-}
+    // หมดเวลาแล้ว — คำนวณข้ามรอบถ้าดับจอนาน
+    let overflow = now - phaseEndTime; // ms ที่เกินมา
 
-function progress() {
-const total = (phase === “work” ? workMin : breakMin) * 60;
-const left = secondsLeft();
-return total > 0 ? left / total : 0;
-}
+    while (overflow >= 0) {
+      // สลับ phase
+      if (phase === "work") {
+        phase = "break";
+        const dur = breakMin * 60 * 1000;
+        if (overflow < dur) { phaseEndTime = Date.now() + (dur - overflow); break; }
+        overflow -= dur;
+      } else {
+        phase = "work";
+        round += 1;
+        const dur = workMin * 60 * 1000;
+        if (overflow < dur) { phaseEndTime = Date.now() + (dur - overflow); break; }
+        overflow -= dur;
+      }
+    }
 
-// –– sync เมื่อกลับมาเปิดหน้าจอ ––
-document.addEventListener(“visibilitychange”, () => {
-if (document.visibilityState === “visible” && running) tick();
-});
+    render();
+  }
 
-// –– render ––
-function render() {
-const app = document.getElementById(“app”);
-const isWork = phase === “work”;
-const cls = isWork ? “work” : “brk”;
+  function secondsLeft() {
+    if (!phaseEndTime) return 0;
+    return Math.max(0, Math.round((phaseEndTime - Date.now()) / 1000));
+  }
 
+  function progress() {
+    const total = (phase === "work" ? workMin : breakMin) * 60;
+    const left = secondsLeft();
+    return total > 0 ? left / total : 0;
+  }
 
-if (!running) {
-  // Setup screen
-  app.innerHTML = `
-    <div class="page" style="background:#18181C">
-      <div class="card">
-        <div class="header">
-          <span class="emoji">🍅</span>
-          <div>
-            <div class="title">โปโมโดโร</div>
-            <div class="subtitle">ตั้งค่าแล้วปล่อยให้มันทำงาน</div>
+  // ---- sync เมื่อกลับมาเปิดหน้าจอ ----
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && running) tick();
+  });
+
+  // ---- render ----
+  function render() {
+    const app = document.getElementById("app");
+    const isWork = phase === "work";
+    const cls = isWork ? "work" : "brk";
+
+    if (!running) {
+      // Setup screen
+      app.innerHTML = `
+        <div class="page" style="background:#18181C">
+          <div class="card">
+            <div class="header">
+              <span class="emoji">🍅</span>
+              <div>
+                <div class="title">โปโมโดโร</div>
+                <div class="subtitle">ตั้งค่าแล้วปล่อยให้มันทำงาน</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="section">
+              <div class="label">🧠 ช่วงทำงาน</div>
+              <div class="grid">
+                ${WORK_OPTIONS.map(m => `<button class="chip ${workMin===m?'aw':''}" onclick="setWork(${m})">${m}<span style="font-size:10px;margin-left:2px;opacity:0.65">นาที</span></button>`).join("")}
+              </div>
+            </div>
+            <div class="section">
+              <div class="label">☕ ช่วงพัก</div>
+              <div class="grid">
+                ${BREAK_OPTIONS.map(m => `<button class="chip ${breakMin===m?'ab':''}" onclick="setBreak(${m})">${m}<span style="font-size:10px;margin-left:2px;opacity:0.65">นาที</span></button>`).join("")}
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="summary">
+              <span style="color:#C8906A;font-weight:600">🧠 ${workMin} นาที</span>
+              <span style="color:#62627A;font-size:12px">→</span>
+              <span style="color:#6A9EB0;font-weight:600">☕ ${breakMin} นาที</span>
+              <span style="color:#62627A;font-size:12px">→ วนซ้ำ</span>
+            </div>
+            <button class="start-btn" onclick="startTimer()">เริ่มเลย →</button>
           </div>
-        </div>
-        <div class="divider"></div>
-        <div class="section">
-          <div class="label">🧠 ช่วงทำงาน</div>
-          <div class="grid">
-            ${WORK_OPTIONS.map(m => `<button class="chip ${workMin===m?'aw':''}" onclick="setWork(${m})">${m}<span style="font-size:10px;margin-left:2px;opacity:0.65">นาที</span></button>`).join("")}
+        </div>`;
+      return;
+    }
+
+    // Running screen
+    const left = secondsLeft();
+    const mins = Math.floor(left / 60);
+    const secs = left % 60;
+    const R = 108;
+    const circ = 2 * Math.PI * R;
+    const dash = circ * progress();
+
+    app.innerHTML = `
+      <div class="run-page ${cls}">
+        <div class="run-wrap">
+          <div class="phase-badge ${cls}">${isWork ? "🧠 กำลังทำงาน" : "☕ พักผ่อน"}</div>
+          <div class="round-label">รอบที่ ${round}</div>
+          <div class="circle-wrap">
+            <svg width="256" height="256" viewBox="0 0 256 256">
+              <circle cx="128" cy="128" r="120" fill="none" stroke="${isWork?'#2A1F18':'#182028'}" stroke-width="1"/>
+              <circle cx="128" cy="128" r="${R}" fill="none" stroke="${isWork?'#2A1F18':'#182028'}" stroke-width="7"/>
+              <circle cx="128" cy="128" r="${R}" fill="none" stroke="${isWork?'#C8906A':'#6A9EB0'}" stroke-width="7"
+                stroke-linecap="round"
+                stroke-dasharray="${dash} ${circ}"
+                stroke-dashoffset="0"
+                transform="rotate(-90 128 128)"
+                style="transition:stroke-dasharray 0.5s linear"/>
+            </svg>
+            <div class="time-overlay">
+              <div class="time-num ${cls}">${pad(mins)}:${pad(secs)}</div>
+              ${!isWork ? '<div class="break-hint">😌 พักผ่อนสักครู่</div>' : ''}
+            </div>
           </div>
-        </div>
-        <div class="section">
-          <div class="label">☕ ช่วงพัก</div>
-          <div class="grid">
-            ${BREAK_OPTIONS.map(m => `<button class="chip ${breakMin===m?'ab':''}" onclick="setBreak(${m})">${m}<span style="font-size:10px;margin-left:2px;opacity:0.65">นาที</span></button>`).join("")}
+          <div class="info-row">
+            <div class="info-item">
+              <span class="info-key">ทำงาน</span>
+              <span class="info-val-work">${workMin} นาที</span>
+            </div>
+            <div class="divider-v"></div>
+            <div class="info-item">
+              <span class="info-key">พัก</span>
+              <span class="info-val-brk">${breakMin} นาที</span>
+            </div>
           </div>
+          <button class="stop-btn" onclick="stopTimer()">⏹ หยุด</button>
         </div>
-        <div class="divider"></div>
-        <div class="summary">
-          <span style="color:#C8906A;font-weight:600">🧠 ${workMin} นาที</span>
-          <span style="color:#62627A;font-size:12px">→</span>
-          <span style="color:#6A9EB0;font-weight:600">☕ ${breakMin} นาที</span>
-          <span style="color:#62627A;font-size:12px">→ วนซ้ำ</span>
-        </div>
-        <button class="start-btn" onclick="startTimer()">เริ่มเลย →</button>
-      </div>
-    </div>`;
-  return;
-}
+      </div>`;
+  }
 
-// Running screen
-const left = secondsLeft();
-const mins = Math.floor(left / 60);
-const secs = left % 60;
-const R = 108;
-const circ = 2 * Math.PI * R;
-const dash = circ * progress();
+  window.setWork = m => { workMin = m; render(); };
+  window.setBreak = m => { breakMin = m; render(); };
+  window.startTimer = startTimer;
+  window.stopTimer = stopTimer;
 
-app.innerHTML = `
-  <div class="run-page ${cls}">
-    <div class="run-wrap">
-      <div class="phase-badge ${cls}">${isWork ? "🧠 กำลังทำงาน" : "☕ พักผ่อน"}</div>
-      <div class="round-label">รอบที่ ${round}</div>
-      <div class="circle-wrap">
-        <svg width="256" height="256" viewBox="0 0 256 256">
-          <circle cx="128" cy="128" r="120" fill="none" stroke="${isWork?'#2A1F18':'#182028'}" stroke-width="1"/>
-          <circle cx="128" cy="128" r="${R}" fill="none" stroke="${isWork?'#2A1F18':'#182028'}" stroke-width="7"/>
-          <circle cx="128" cy="128" r="${R}" fill="none" stroke="${isWork?'#C8906A':'#6A9EB0'}" stroke-width="7"
-            stroke-linecap="round"
-            stroke-dasharray="${dash} ${circ}"
-            stroke-dashoffset="0"
-            transform="rotate(-90 128 128)"
-            style="transition:stroke-dasharray 0.5s linear"/>
-        </svg>
-        <div class="time-overlay">
-          <div class="time-num ${cls}">${pad(mins)}:${pad(secs)}</div>
-          ${!isWork ? '<div class="break-hint">😌 พักผ่อนสักครู่</div>' : ''}
-        </div>
-      </div>
-      <div class="info-row">
-        <div class="info-item">
-          <span class="info-key">ทำงาน</span>
-          <span class="info-val-work">${workMin} นาที</span>
-        </div>
-        <div class="divider-v"></div>
-        <div class="info-item">
-          <span class="info-key">พัก</span>
-          <span class="info-val-brk">${breakMin} นาที</span>
-        </div>
-      </div>
-      <button class="stop-btn" onclick="stopTimer()">⏹ หยุด</button>
-    </div>
-  </div>`;
-
-
-}
-
-window.setWork = m => { workMin = m; render(); };
-window.setBreak = m => { breakMin = m; render(); };
-window.startTimer = startTimer;
-window.stopTimer = stopTimer;
-
-render();
+  render();
 </script>
-
 </body>
 </html>
