@@ -120,6 +120,7 @@
 
   function stop() {
     clearInterval(intervalId);
+    intervalId = null;
     _phaseEndTime = null;
     setState({ screen: "setup" });
   }
