@@ -70,9 +70,12 @@
     phase: "work",
     round: 1,
     secondsLeft: 0,
-    phaseEndTime: null,
   };
 
+  // ตัวแปรแยกสำหรับค่าที่ interval ต้องอ่านให้ถูกต้องเสมอ (ไม่ถูก closure กัก)
+  let _phase = "work";
+  let _round = 1;
+  let _phaseEndTime = null;
   let intervalId = null;
 
   function setState(patch) {
@@ -81,15 +84,15 @@
   }
 
   function syncFromNow() {
-    if (!state.phaseEndTime) return;
-    let remaining = Math.round((state.phaseEndTime - Date.now()) / 1000);
+    if (!_phaseEndTime) return;
+    let remaining = Math.round((_phaseEndTime - Date.now()) / 1000);
     if (remaining > 0) { setState({ secondsLeft: remaining }); return; }
 
     let elapsed = -remaining;
-    let curPhase = state.phase;
-    let curRound = state.round;
+    let curPhase = _phase;
+    let curRound = _round;
 
-    while (elapsed >= 0) {
+    while (true) {
       const dur = curPhase === "work" ? state.workMin * 60 : state.breakMin * 60;
       if (elapsed < dur) { remaining = dur - elapsed; break; }
       elapsed -= dur;
@@ -98,21 +101,27 @@
       curPhase = next;
     }
 
-    const newEndTime = Date.now() + remaining * 1000;
-    setState({ phase: curPhase, round: curRound, secondsLeft: remaining, phaseEndTime: newEndTime });
+    _phase = curPhase;
+    _round = curRound;
+    _phaseEndTime = Date.now() + remaining * 1000;
+    setState({ phase: curPhase, round: curRound, secondsLeft: remaining });
   }
 
   function start() {
+    if (intervalId) return; // ป้องกัน double tap
     const duration = state.workMin * 60;
-    const phaseEndTime = Date.now() + duration * 1000;
-    setState({ screen: "running", phase: "work", round: 1, secondsLeft: duration, phaseEndTime });
+    _phase = "work";
+    _round = 1;
+    _phaseEndTime = Date.now() + duration * 1000;
     clearInterval(intervalId);
     intervalId = setInterval(syncFromNow, 500);
+    setState({ screen: "running", phase: "work", round: 1, secondsLeft: duration });
   }
 
   function stop() {
     clearInterval(intervalId);
-    setState({ screen: "setup", phaseEndTime: null });
+    _phaseEndTime = null;
+    setState({ screen: "setup" });
   }
 
   document.addEventListener("visibilitychange", () => {
