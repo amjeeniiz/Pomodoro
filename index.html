@@ -90,7 +90,7 @@ function tick() {
 if (!running || !phaseEndTime) return;
 const now = Date.now();
 
-```
+
 // ยังไม่หมดเวลา — แค่ re-render
 if (now < phaseEndTime) { render(); return; }
 
@@ -114,7 +114,7 @@ while (overflow >= 0) {
 }
 
 render();
-```
+
 
 }
 
@@ -140,7 +140,7 @@ const app = document.getElementById(“app”);
 const isWork = phase === “work”;
 const cls = isWork ? “work” : “brk”;
 
-```
+
 if (!running) {
   // Setup screen
   app.innerHTML = `
@@ -222,7 +222,7 @@ app.innerHTML = `
       <button class="stop-btn" onclick="stopTimer()">⏹ หยุด</button>
     </div>
   </div>`;
-```
+
 
 }
 
